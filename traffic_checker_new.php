@@ -64,7 +64,8 @@
 
     //Execute the curl request $command and store it as an array
     if(isset($_GET['pretty'])){
-        echo sendTraffic($CURLdata);
+        echo '<pre>' . print_r(json_decode($CURLdata), 1) . '</pre>';
+        echo '<pre>' . print_r(json_decode(sendTraffic($CURLdata)), 1) . '</pre>';
     } else {
         sendTraffic($CURLdata);
     }
