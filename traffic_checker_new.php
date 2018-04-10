@@ -7,8 +7,8 @@
     include_once('global_functions.php');
 
     //Go to Highways agency and get a list of all the events
-//    $data = doCurl('http://m.highways.gov.uk/feeds/rss/AllEvents.xml');
-    $data = doCurl('http://m.highways.gov.uk/feeds/rss/UnplannedEvents.xml');
+    $data = doCurl('http://m.highways.gov.uk/feeds/rss/AllEvents.xml');
+//    $data = doCurl('http://m.highways.gov.uk/feeds/rss/UnplannedEvents.xml');
 
     //Split those events up into an array so that we can work with them.
     xml_parse_into_struct(xml_parser_create(), $data, $Events);
@@ -48,7 +48,45 @@
          $data["road"] = $Event[10]["value"];
          $data["county"] = $Event[12]["value"];
 
-         array_push($output, $data);
+         //Get the current time
+         $nowTime = strtotime(date('Y-m-d') . 'T' . date('h:i:s+01:00'));
+         $overallStart = strtotime($Event[17]["value"]);
+
+         //If the event start is in the future, set isFuture to true
+         if($overallStart > $nowTime){
+             $data["isFuture"] = true;
+         } else {
+             $data["isFuture"] = false;
+         }
+
+         //Because sending all the future planned events makes the array WAAAAAAAAAAAAYYYYYY too big for FCM, we only want to send events which will occur within the next 1 day, and result in road closure
+         $futureDateFilter = strtotime(date('Y-m-d h:i:s', strtotime("+1 Day")));
+
+         //We only want to apply the additional date filters if the event is in the future, else we send it anyway
+         if($data["isFuture"]){
+             //Start the event by default to send
+             $sendEvent = true;
+
+             //If the event starts after the FDF, then ignore it.
+             if($overallStart > $futureDateFilter){
+                 $sendEvent = false;
+             }
+
+             //We only want to display roads closed
+             if(strpos($data["category"], "closure") === false){
+                 $sendEvent = false;
+             }
+
+             //Attach the extra fields
+             $data["overallStart"] = gmdate("Y-m-d\TH:i:s", $overallStart) . '+01:00';
+
+             //Attach the event if it is not to be ignored.
+             if($sendEvent){
+                 array_push($output, $data);
+             }
+         } else {
+             array_push($output, $data);
+         }
     }
 
     //Get the tokens to send to.
