@@ -7,8 +7,8 @@
     include_once('global_functions.php');
 
     //Go to Highways agency and get a list of all the events
-    $data = doCurl('http://m.highways.gov.uk/feeds/rss/AllEvents.xml');
-//    $data = doCurl('http://m.highways.gov.uk/feeds/rss/UnplannedEvents.xml');
+//    $data = doCurl('http://m.highways.gov.uk/feeds/rss/AllEvents.xml');
+    $data = doCurl('http://m.highways.gov.uk/feeds/rss/UnplannedEvents.xml');
 
     //Split those events up into an array so that we can work with them.
     xml_parse_into_struct(xml_parser_create(), $data, $Events);
@@ -28,6 +28,8 @@
 
     //Only take roads for Hampshire or Surrey
     foreach($Temp as $Event){
+        if(!isset($Event[12]))die();
+
         $COUNTY = $Event[12]["value"];
 
         if($COUNTY == "Surrey" || $COUNTY == "Hampshire"){
@@ -78,7 +80,7 @@
              }
 
              //Attach the extra fields
-             $data["overallStart"] = gmdate("Y-m-d\TH:i:s", $overallStart) . '+01:00';
+             $data["overallStart"] = gmdate("d/m/y H:i", $overallStart);
 
              //Attach the event if it is not to be ignored.
              if($sendEvent){
